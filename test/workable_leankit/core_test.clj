@@ -26,7 +26,7 @@
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
        (constantly {:status 401
-                    :body {:error "Not authorized"}})]
+                    :body "{\"error\": \"Not authorized\"}"})]
       (is (= {:status :error
               :message "Failed to get stages"}
              (main))))))

@@ -11,7 +11,6 @@
   (try 
     (http/post (str leankit-url "/io/board")
                {:bearer-auth leankit-token})
-    {:status :error
-     :message "Failed to get stages"}
+    {:status :error :message "Failed to get stages"}
     (catch clojure.lang.ExceptionInfo e
       {:status :error :message "Failed to create board"})))
