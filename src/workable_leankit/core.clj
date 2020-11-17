@@ -14,7 +14,6 @@
          {:status :error :message message})))
 
 (defn migrate-lanes-to-leankit [board-id lanes-body]
-  (println lanes-body)
   (http/put (str leankit-url "/io/board/" board-id "/layout")
             {:bearer-auth leankit-token
              :body lanes-body})
@@ -31,7 +30,6 @@
         lanes (map (fn [item] {:title (:name item)}) stages)
         lanes-body (json/write-str {:lanes lanes})]
 
-    (println lanes-body)
     (status-try #(migrate-lanes-to-leankit board-id lanes-body)
                  "Failed to add stages to board")))
 
