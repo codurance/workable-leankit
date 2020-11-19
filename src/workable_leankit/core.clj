@@ -13,11 +13,47 @@
        (catch clojure.lang.ExceptionInfo e
          {:status :error :message message})))
 
+(defn get-candidates [url processed-candidates]
+  (let [url (if (nil? url) (str workable-url "/candidates") url)
+        response (http/get url
+                           { :bearer-auth workable-token })
+        candidates-body (json/read-str (:body response) :key-fn keyword)
+        processed-candidates (conj (:candidates candidates-body) processed-candidates)]
+    (if (nil? (:next (:paging candidates-body)))
+      processed-candidates
+      (get-candidates (:next (:paging candidates-body)) processed-candidates))))
+
+(defn migrate-candidates [board-id lanes-map]
+  (defn migrate-candidate [c]
+    (if (not (empty? c))
+      ((http/post (str leankit-url "/io/card")
+                  {:bearer-auth leankit-token
+                   :body (json/write-str (first c))})
+       (migrate-candidate (rest c)))))
+
+  (let [candidates (get-candidates nil '())
+        cards-map (map (fn [i] {:title (str (:name i) " - " (:title (:job i)))
+                                :description (:profile_url i)
+                                :laneId (lanes-map (:stage i))})
+                       candidates)]
+    (status-try
+      (fn []
+        (migrate-candidate cards-map)
+        {:status :success :message "Migration completed successfully"})
+      "Failed to migrate candidates")) )
+
 (defn migrate-lanes-to-leankit [board-id lanes-body]
-  (http/put (str leankit-url "/io/board/" board-id "/layout")
-            {:bearer-auth leankit-token
-             :body lanes-body})
-  {:status :error :message "Failed to get candidates"})
+  (let [lanes-response
+        (http/put (str leankit-url "/io/board/" board-id "/layout")
+                  {:bearer-auth leankit-token
+                   :body lanes-body})
+
+        lanes-info (json/read-str (:body lanes-response)
+                                  :key-fn keyword)
+
+        lanes-map (into {} (map (fn [i] {(:title i) (:id i)}) (:lanes lanes-info)))]
+
+    (status-try #(migrate-candidates board-id lanes-map) "Failed to get candidates")))
 
 (defn get-stages [board-id]
   (let [stages-response
@@ -31,7 +67,7 @@
         lanes-body (json/write-str {:lanes lanes})]
 
     (status-try #(migrate-lanes-to-leankit board-id lanes-body)
-                 "Failed to add stages to board")))
+                "Failed to add stages to board")))
 
 (defn migrate-workable-to-leankit []
   (let [board-id-response 
