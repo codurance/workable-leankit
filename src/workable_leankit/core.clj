@@ -34,6 +34,7 @@
   (let [candidates (get-candidates nil '())
         cards-map (map (fn [i] {:title (str (:name i) " - " (:title (:job i)))
                                 :description (:profile_url i)
+                                :boardId board-id
                                 :laneId (lanes-map (:stage i))})
                        candidates)]
     (status-try
@@ -84,4 +85,3 @@
   "Synchronises Workable with a Leankit board"
   [& args]
   (status-try migrate-workable-to-leankit "Failed to create board"))
-
