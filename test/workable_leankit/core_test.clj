@@ -42,7 +42,7 @@
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
        (constantly {:status 200
-                    :body "{\"stages\": [{\"name\": \"phone interview\"}]}"})
+                    :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
        (http-mock/route 
          :put
          (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
@@ -62,7 +62,7 @@
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
        (constantly {:status 200
-                    :body "{\"stages\": [{\"name\": \"phone interview\"}]}"})
+                    :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
        (http-mock/route 
          :put
          (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
@@ -86,7 +86,7 @@
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
        (constantly {:status 200
-                    :body "{\"stages\": [{\"name\": \"phone interview\"}]}"})
+                    :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
        (http-mock/route 
          :put
          (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
@@ -115,7 +115,7 @@
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
        (constantly {:status 200
-                    :body "{\"stages\": [{\"name\": \"phone interview\"}]}"})
+                    :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
        (http-mock/route 
          :put
          (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
@@ -149,7 +149,7 @@
 		         :get
 		         (str (System/getenv "WORKABLE_URL") "/stages"))
 		       (constantly {:status 200
-		                    :body "{\"stages\": [{\"name\": \"phone interview\"}]}"})
+		                    :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
 		       (http-mock/route 
 		         :put
 		         (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
