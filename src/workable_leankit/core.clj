@@ -11,7 +11,6 @@
 (defn status-try [f message]
   (try (f) 
        (catch clojure.lang.ExceptionInfo e
-         (print-stack-trace e)
          {:status :error :message message})))
 
 (defn get-candidates [url processed-candidates]
@@ -28,7 +27,12 @@
       new-processed-candidates
       (get-candidates (:next (:paging candidates-body)) new-processed-candidates))))
 
-(defn migrate-candidates [board-id lanes-map]
+(defn get-jobs []
+  (http/get (str workable-url "/jobs?status=published")
+            {:headers {"Content-Type" "application/json"
+                       "Authorization" (str "Bearer " workable-token)}}))
+
+(defn migrate-candidates-for-job [board-id lanes-map job]
   (defn migrate-candidate [c]
     (println (str "Migrating candidates. " (count c) " remaining candidates."))
     (if (not (empty? c))
@@ -38,8 +42,13 @@
                    :body (json/write-str (first c))})
        (migrate-candidate (rest c)))))
 
-  (let [candidates (get-candidates nil [])
-        cards-map (map (fn [i] {:title (str (:name i) " - " (:title (:job i)))
+  (println "Job:" job)
+  (let [candidates (get-candidates (str workable-url 
+                                        "/candidates?shortcode="
+                                        (:shortcode job)) 
+                                   [])
+        cards-map (map (fn [i] {:title (str (:name i) " - " (:title job)) 
+                                :customId (:city (:location job)) 
                                 :description (:profile_url i)
                                 :boardId board-id
                                 :laneId (lanes-map (:stage i))})
@@ -51,6 +60,21 @@
         {:status :success :message "Migration completed successfully"})
       "Failed to migrate candidates")) )
 
+(defn migrate-candidates [board-id lanes-map]
+  (defn process-jobs [j]
+    (if (not (empty? j))
+      (let [result (migrate-candidates-for-job board-id lanes-map (first j))]
+        (if (= (:status result) :error)
+          result
+          (process-jobs (rest j))))
+      {:status :success :message "Migration completed successfully"}))
+  (status-try 
+    (fn []
+      (let [jobs-response (get-jobs)
+            jobs-body (json/read-str (:body jobs-response) :key-fn keyword)
+            jobs (:jobs jobs-body)]
+        (status-try #(process-jobs jobs) "Failed to get candidates")))
+    "Failed to get jobs"))
 (defn migrate-lanes-to-leankit [board-id lanes-body]
   (let [lanes-response
         (http/put (str leankit-url "/io/board/" board-id "/layout")
@@ -104,3 +128,4 @@
   "Synchronises Workable with a Leankit board"
   [& args]
   (status-try migrate-workable-to-leankit "Failed to create board"))
+
