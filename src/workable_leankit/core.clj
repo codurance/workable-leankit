@@ -20,7 +20,9 @@
                                       "Authorization" (str "Bearer " workable-token)}})
         candidates-body (json/read-str (:body response) :key-fn keyword)
         new-candidates (:candidates candidates-body)
-        new-processed-candidates (into [] (concat processed-candidates new-candidates))]
+        new-valid-candidates (filter (fn [i] (not (:disqualified i)))
+                                     new-candidates)
+        new-processed-candidates (into [] (concat processed-candidates new-valid-candidates))]
     (println (str "Getting candidates. " (count new-processed-candidates) " found."))
     (Thread/sleep 500)
     (if (nil? (:next (:paging candidates-body)))
@@ -42,7 +44,6 @@
                    :body (json/write-str (first c))})
        (migrate-candidate (rest c)))))
 
-  (println "Job:" job)
   (let [candidates (get-candidates (str workable-url 
                                         "/candidates?shortcode="
                                         (:shortcode job)) 
@@ -128,4 +129,3 @@
   "Synchronises Workable with a Leankit board"
   [& args]
   (status-try migrate-workable-to-leankit "Failed to create board"))
-
