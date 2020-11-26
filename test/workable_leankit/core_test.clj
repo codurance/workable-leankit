@@ -51,6 +51,31 @@
       (is (= {:status :error
               :message "Failed to add stages to board"}
              (main)))))
+  (testing "Error getting the existing cards"
+    (http-mock/with-mock-routes
+      [(http-mock/route 
+         :get
+         (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
+       (constantly {:status 200 
+                    :body "{\"id\": 123, \"lanes\": []}"})
+       (http-mock/route 
+         :get
+         (str (System/getenv "WORKABLE_URL") "/stages"))
+       (constantly {:status 200
+                    :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
+       (http-mock/route 
+         :put
+         (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
+       (constantly {:status 200
+                    :body "{ \"lanes\": [ {\"id\": \"1 \",  \"title\": \"phone interview\", \"wipLimit\": 0, \"columns\": 1, \"orientation\": \"vertical\", \"index\": 0, \"type\": \"ready\", \"classType\": \"backlog\", \"cardStatus\": \"notStarted\", \"description\": null, \"isConnectionDoneLane\": false, \"isDefaultDropLane\": false, \"children\": [] } ], \"layoutChecksum\": \"b41c4d1deb7e46b2180a636020b2e5cf\" }"})
+       (http-mock/route 
+         :get
+         (str (System/getenv "LEANKIT_URL") "/io/cards?board=123"))
+       (constantly {:status 401 
+                    :body "{\"error\": \"Unauthorized\"}"}) ]
+      (is (= {:status :error
+              :message "Failed to retrieve existing cards"}
+             (main)))))
   (testing "Error fetching jobs"
     (http-mock/with-mock-routes
       [(http-mock/route 
@@ -70,41 +95,51 @@
                     :body "{ \"lanes\": [ {\"id\": \"1 \",  \"title\": \"phone interview\", \"wipLimit\": 0, \"columns\": 1, \"orientation\": \"vertical\", \"index\": 0, \"type\": \"ready\", \"classType\": \"backlog\", \"cardStatus\": \"notStarted\", \"description\": null, \"isConnectionDoneLane\": false, \"isDefaultDropLane\": false, \"children\": [] } ], \"layoutChecksum\": \"b41c4d1deb7e46b2180a636020b2e5cf\" }"})
        (http-mock/route 
          :get
+         (str (System/getenv "LEANKIT_URL") "/io/cards?board=123"))
+       (constantly {:status 200 
+                    :body "{\"cards\": []}"})
+       (http-mock/route 
+         :get
          (str (System/getenv "WORKABLE_URL") "/jobs?status=published"))
        (constantly {:status 401
                     :body "Failed to get jobs"})]
       (is (= (main)
              {:status :error :message "Failed to get jobs"}))))
 
-  (testing "Error fetching candidates"
-    (http-mock/with-mock-routes
-      [(http-mock/route 
-         :get
-         (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
-       (constantly {:status 200 
-                    :body "{\"id\": 123, \"lanes\": []}"})
-       (http-mock/route 
-         :get
-         (str (System/getenv "WORKABLE_URL") "/stages"))
-       (constantly {:status 200
-                    :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
-       (http-mock/route 
-         :put
-         (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
-       (constantly {:status 200
-                    :body "{ \"lanes\": [ {\"id\": \"1 \",  \"title\": \"phone interview\", \"wipLimit\": 0, \"columns\": 1, \"orientation\": \"vertical\", \"index\": 0, \"type\": \"ready\", \"classType\": \"backlog\", \"cardStatus\": \"notStarted\", \"description\": null, \"isConnectionDoneLane\": false, \"isDefaultDropLane\": false, \"children\": [] } ], \"layoutChecksum\": \"b41c4d1deb7e46b2180a636020b2e5cf\" }"})
-       (http-mock/route 
-         :get
-         (str (System/getenv "WORKABLE_URL") "/jobs?status=published"))
-       (constantly {:status 200
-                    :body "{\"jobs\": [{\"id\": \"61884e2\",\"title\": \"Sales Intern\",\"full_title\": \"Sales Intern - US/3/SI\",\"shortcode\": \"GROOV003\",\"code\": \"US/3/SI\", \"state\": \"published\", \"department\": \"Sales\", \"url\": \"https://groove-tech.workable.com/jobs/102268944\", \"application_url\": \"https://groove-tech.workable.com/jobs/102268944/candidates/new\", \"shortlink\": \"https://groove-tech.workable.com/j/GROOV003\", \"location\": { \"location_str\": \"Portland, Oregon, United States\", \"country\": \"United States\", \"country_code\": \"US\", \"region\": \"Oregon\", \"region_code\": \"OR\", \"city\": \"Portland\", \"zip_code\": \"97201\", \"telecommuting\": false }, \"created_at\": \"2015-07-01T00:00:00Z\" } ] }"})
-       (http-mock/route
-         :get
-         (str (System/getenv "WORKABLE_URL") "/candidates?shortcode=GROOV003"))
-       (constantly {:status 401
-                    :body "{\"error\": \"not authorized\"}"})]
-      (is (= (main)
-             {:status :error :message "Failed to get candidates"}))))
+(testing "Error fetching candidates"
+  (http-mock/with-mock-routes
+    [(http-mock/route 
+       :get
+       (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
+     (constantly {:status 200 
+                  :body "{\"id\": 123, \"lanes\": []}"})
+     (http-mock/route 
+       :get
+       (str (System/getenv "WORKABLE_URL") "/stages"))
+     (constantly {:status 200
+                  :body "{\"stages\": [{\"name\": \"phone interview\",\"position\": 0}]}"})
+     (http-mock/route 
+       :put
+       (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
+     (constantly {:status 200
+                  :body "{ \"lanes\": [ {\"id\": \"1 \",  \"title\": \"phone interview\", \"wipLimit\": 0, \"columns\": 1, \"orientation\": \"vertical\", \"index\": 0, \"type\": \"ready\", \"classType\": \"backlog\", \"cardStatus\": \"notStarted\", \"description\": null, \"isConnectionDoneLane\": false, \"isDefaultDropLane\": false, \"children\": [] } ], \"layoutChecksum\": \"b41c4d1deb7e46b2180a636020b2e5cf\" }"})
+     (http-mock/route 
+       :get
+       (str (System/getenv "LEANKIT_URL") "/io/cards?board=123"))
+     (constantly {:status 200 
+                  :body "{\"cards\": []}"})
+     (http-mock/route 
+       :get
+       (str (System/getenv "WORKABLE_URL") "/jobs?status=published"))
+     (constantly {:status 200
+                  :body "{\"jobs\": [{\"id\": \"61884e2\",\"title\": \"Sales Intern\",\"full_title\": \"Sales Intern - US/3/SI\",\"shortcode\": \"GROOV003\",\"code\": \"US/3/SI\", \"state\": \"published\", \"department\": \"Sales\", \"url\": \"https://groove-tech.workable.com/jobs/102268944\", \"application_url\": \"https://groove-tech.workable.com/jobs/102268944/candidates/new\", \"shortlink\": \"https://groove-tech.workable.com/j/GROOV003\", \"location\": { \"location_str\": \"Portland, Oregon, United States\", \"country\": \"United States\", \"country_code\": \"US\", \"region\": \"Oregon\", \"region_code\": \"OR\", \"city\": \"Portland\", \"zip_code\": \"97201\", \"telecommuting\": false }, \"created_at\": \"2015-07-01T00:00:00Z\" } ] }"})
+     (http-mock/route
+       :get
+       (str (System/getenv "WORKABLE_URL") "/candidates?shortcode=GROOV003"))
+     (constantly {:status 401
+                  :body "{\"error\": \"not authorized\"}"})]
+    (is (= (main)
+           {:status :error :message "Failed to get candidates"}))))
 (testing "Error fetching second page of candidates"
   (http-mock/with-mock-routes
     [(http-mock/route 
@@ -123,6 +158,11 @@
        (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
      (constantly {:status 200
                   :body "{ \"lanes\": [ {\"id\": \"1 \",  \"title\": \"phone interview\", \"wipLimit\": 0, \"columns\": 1, \"orientation\": \"vertical\", \"index\": 0, \"type\": \"ready\", \"classType\": \"backlog\", \"cardStatus\": \"notStarted\", \"description\": null, \"isConnectionDoneLane\": false, \"isDefaultDropLane\": false, \"children\": [] } ], \"layoutChecksum\": \"b41c4d1deb7e46b2180a636020b2e5cf\" }"})
+     (http-mock/route 
+       :get
+       (str (System/getenv "LEANKIT_URL") "/io/cards?board=123"))
+     (constantly {:status 200 
+                  :body "{\"cards\": []}"})
      (http-mock/route 
        :get
        (str (System/getenv "WORKABLE_URL") "/jobs?status=published"))
@@ -158,6 +198,11 @@
        (str (System/getenv "LEANKIT_URL") "/io/board/123/layout"))
      (constantly {:status 200
                   :body "{ \"lanes\": [ { \"id\": \"1 \", \"title\": \"phone interview\", \"wipLimit\": 0, \"columns\": 1, \"orientation\": \"vertical\", \"index\": 0, \"type\": \"ready\", \"classType\": \"backlog\", \"cardStatus\": \"notStarted\", \"description\": null, \"isConnectionDoneLane\": false, \"isDefaultDropLane\": false, \"children\": [] } ], \"layoutChecksum\": \"b41c4d1deb7e46b2180a636020b2e5cf\" }"})
+     (http-mock/route 
+       :get
+       (str (System/getenv "LEANKIT_URL") "/io/cards?board=123"))
+     (constantly {:status 200 
+                  :body "{\"cards\": []}"})
      (http-mock/route 
        :get
        (str (System/getenv "WORKABLE_URL") "/jobs?status=published"))
@@ -199,6 +244,11 @@
                   :body "{ \"lanes\": [ { \"id\": \"1 \", \"title\": \"phone interview\", \"wipLimit\": 0, \"columns\": 1, \"orientation\": \"vertical\", \"index\": 0, \"type\": \"ready\", \"classType\": \"backlog\", \"cardStatus\": \"notStarted\", \"description\": null, \"isConnectionDoneLane\": false, \"isDefaultDropLane\": false, \"children\": [] } ], \"layoutChecksum\": \"b41c4d1deb7e46b2180a636020b2e5cf\" }"})
      (http-mock/route 
        :get
+       (str (System/getenv "LEANKIT_URL") "/io/cards?board=123"))
+     (constantly {:status 200 
+                  :body "{\"cards\": []}"})
+     (http-mock/route 
+       :get
        (str (System/getenv "WORKABLE_URL") "/jobs?status=published"))
      (constantly {:status 200
                   :body "{\"jobs\": [{\"id\": \"61884e2\",\"title\": \"Sales Intern\",\"full_title\": \"Sales Intern - US/3/SI\",\"shortcode\": \"GROOV003\",\"code\": \"US/3/SI\", \"state\": \"published\", \"department\": \"Sales\", \"url\": \"https://groove-tech.workable.com/jobs/102268944\", \"application_url\": \"https://groove-tech.workable.com/jobs/102268944/candidates/new\", \"shortlink\": \"https://groove-tech.workable.com/j/GROOV003\", \"location\": { \"location_str\": \"Portland, Oregon, United States\", \"country\": \"United States\", \"country_code\": \"US\", \"region\": \"Oregon\", \"region_code\": \"OR\", \"city\": \"Portland\", \"zip_code\": \"97201\", \"telecommuting\": false }, \"created_at\": \"2015-07-01T00:00:00Z\" } ] }"})
@@ -219,7 +269,5 @@
                   :body "{\"id\": \"Hello World\""})]
 
     (is (= (main)
-           {:status :success :message "Migration completed successfully"})))
-  )
-)
+           {:status :success :message "Migration completed successfully"})))))
 

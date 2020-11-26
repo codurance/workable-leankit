@@ -53,6 +53,7 @@
                                 :customId (:city (:location job)) 
                                 :description (:profile_url i)
                                 :boardId board-id
+                                :tags (list (:id i))
                                 :laneId (lanes-map (:stage i))})
                        candidates)]
     (status-try
@@ -77,6 +78,17 @@
             jobs (:jobs jobs-body)]
         (status-try #(process-jobs jobs) "Failed to get candidates")))
     "Failed to get jobs"))
+
+(defn get-existing-cards [board-id lanes-map]
+  (let [cards-response
+        (http/get (str leankit-url "/io/card?board=" board-id)
+                  {:headers {"Content-Type" "application/json"
+                             "Authorization" (str "Bearer " leankit-token)}})
+
+        cards-info (json/read-str (:body cards-response) :key-fn keyword)]
+
+    (status-try #(migrate-candidates board-id lanes-map) "Failed to get candidates")))
+
 (defn migrate-lanes-to-leankit [board-id lanes-body]
   (let [lanes-response
         (http/put (str leankit-url "/io/board/" board-id "/layout")
@@ -89,7 +101,7 @@
 
         lanes-map (into {} (map (fn [i] {(:title i) (:id i)}) (:lanes lanes-info)))]
 
-    (status-try #(migrate-candidates board-id lanes-map) "Failed to get candidates")))
+    (status-try #(get-existing-cards board-id lanes-map) "Failed to retrieve existing cards")))
 
 (defn get-stages [board-id]
   (let [stages-response
@@ -114,16 +126,14 @@
                 "Failed to add stages to board")))
 
 (defn migrate-workable-to-leankit []
-(println "LEANKIT_BOARD: " leankit-board)
   (let [board-id-response 
 
-  						(http/get (str leankit-url "/io/board/" leankit-board)
-                   {:headers {"Content-Type" "application/json"
-                              "Authorization" (str "Bearer " leankit-token)}})
+        (http/get (str leankit-url "/io/board/" leankit-board)
+                  {:headers {"Content-Type" "application/json"
+                             "Authorization" (str "Bearer " leankit-token)}})
         board-id-map (json/read-str (:body board-id-response)
                                     :key-fn keyword)
         board-id (:id board-id-map)]
-        (println "BOARDID: " board-id)
 
     (status-try #(get-stages board-id)
                 "Failed to get stages")))
