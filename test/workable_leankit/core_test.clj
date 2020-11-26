@@ -5,11 +5,11 @@
             [clj-http-mock.core :as http-mock]))
 
 (deftest workable-leankit-test
-  (testing "Errors creating the board"
+  (testing "Errors getting the board"
     (http-mock/with-mock-routes
       [(http-mock/route 
-         :post 
-         (str (System/getenv "LEANKIT_URL") "/io/board"))
+         :get 
+         (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
        (constantly {:status 403 
                     :body "{\"statusCode\": 403, \"message\": \"Forbidden\"}"})]
       (is (= {:status :error
@@ -18,10 +18,10 @@
   (testing "Errors gettting the stages"
     (http-mock/with-mock-routes
       [(http-mock/route 
-         :post
-         (str (System/getenv "LEANKIT_URL") "/io/board"))
+         :get
+         (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
        (constantly {:status 200 
-                    :body "{\"id\": 123}"})
+                    :body "{\"id\": 123, \"lanes\": []}"})
        (http-mock/route 
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
@@ -34,10 +34,10 @@
   (testing "Errors add a stage on the board"
     (http-mock/with-mock-routes
       [(http-mock/route 
-         :post
-         (str (System/getenv "LEANKIT_URL") "/io/board"))
+         :get
+         (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
        (constantly {:status 200 
-                    :body "{\"id\": 123}"})
+                    :body "{\"id\": 123, \"lanes\": []}"})
        (http-mock/route 
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
@@ -54,10 +54,10 @@
   (testing "Error fetching jobs"
     (http-mock/with-mock-routes
       [(http-mock/route 
-         :post
-         (str (System/getenv "LEANKIT_URL") "/io/board"))
+         :get
+         (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
        (constantly {:status 200 
-                    :body "{\"id\": 123}"})
+                    :body "{\"id\": 123, \"lanes\": []}"})
        (http-mock/route 
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
@@ -79,10 +79,10 @@
   (testing "Error fetching candidates"
     (http-mock/with-mock-routes
       [(http-mock/route 
-         :post
-         (str (System/getenv "LEANKIT_URL") "/io/board"))
+         :get
+         (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
        (constantly {:status 200 
-                    :body "{\"id\": 123}"})
+                    :body "{\"id\": 123, \"lanes\": []}"})
        (http-mock/route 
          :get
          (str (System/getenv "WORKABLE_URL") "/stages"))
@@ -108,10 +108,11 @@
 (testing "Error fetching second page of candidates"
   (http-mock/with-mock-routes
     [(http-mock/route 
-       :post
-       (str (System/getenv "LEANKIT_URL") "/io/board"))
+       :get
+       (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
      (constantly {:status 200 
-                  :body "{\"id\": 123}"})
+                  :body "{\"id\": 123, \"lanes\": []}"})
+
      (http-mock/route 
        :get
        (str (System/getenv "WORKABLE_URL") "/stages"))
@@ -142,10 +143,11 @@
 (testing "Error registering first candidate"
   (http-mock/with-mock-routes
     [(http-mock/route 
-       :post
-       (str (System/getenv "LEANKIT_URL") "/io/board"))
+       :get
+       (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
      (constantly {:status 200 
-                  :body "{\"id\": 123}"})
+                  :body "{\"id\": 123, \"lanes\": []}"})
+
      (http-mock/route 
        :get
        (str (System/getenv "WORKABLE_URL") "/stages"))
@@ -181,10 +183,10 @@
 (testing "Success registering all candidates"
   (http-mock/with-mock-routes
     [(http-mock/route 
-       :post
-       (str (System/getenv "LEANKIT_URL") "/io/board"))
+       :get
+       (str (System/getenv "LEANKIT_URL") "/io/board/" (System/getenv "LEANKIT_BOARD")))
      (constantly {:status 200 
-                  :body "{\"id\": 123}"})
+                  :body "{\"id\": 123, \"lanes\": []}"})
      (http-mock/route 
        :get
        (str (System/getenv "WORKABLE_URL") "/stages"))
@@ -220,3 +222,4 @@
            {:status :success :message "Migration completed successfully"})))
   )
 )
+

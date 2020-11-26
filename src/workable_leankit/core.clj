@@ -5,6 +5,7 @@
 
 (def leankit-url (System/getenv "LEANKIT_URL"))
 (def leankit-token (System/getenv "LEANKIT_TOKEN"))
+(def leankit-board (System/getenv "LEANKIT_BOARD"))
 (def workable-url (System/getenv "WORKABLE_URL"))
 (def workable-token (System/getenv "WORKABLE_TOKEN"))
 
@@ -113,14 +114,16 @@
                 "Failed to add stages to board")))
 
 (defn migrate-workable-to-leankit []
+(println "LEANKIT_BOARD: " leankit-board)
   (let [board-id-response 
-        (http/post (str leankit-url "/io/board")
+
+  						(http/get (str leankit-url "/io/board/" leankit-board)
                    {:headers {"Content-Type" "application/json"
-                              "Authorization" (str "Bearer " leankit-token)}
-                    :body (json/write-str {:title (str "Test " (System/currentTimeMillis))})})
+                              "Authorization" (str "Bearer " leankit-token)}})
         board-id-map (json/read-str (:body board-id-response)
                                     :key-fn keyword)
         board-id (:id board-id-map)]
+        (println "BOARDID: " board-id)
 
     (status-try #(get-stages board-id)
                 "Failed to get stages")))
@@ -129,3 +132,4 @@
   "Synchronises Workable with a Leankit board"
   [& args]
   (status-try migrate-workable-to-leankit "Failed to create board"))
+
